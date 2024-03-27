@@ -1,0 +1,11 @@
+{
+        "name":"Manual Review",
+        "category":"Others",
+        "enabled":"1",
+        "priortiy":"-1",
+        "description":"Send Job to Manual Review on Webinterface",
+        "guid": "29057161-91f7-44eb-9dc0-5c8e11534c90",
+		"script_interpreter":"",
+		"proc_script":"processor.bat",
+        "version":"1.0.1"
+}
