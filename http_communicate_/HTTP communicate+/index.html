@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<meta http-equiv="X-UA-Compatible" content="IE=11" /> 
+<head>
+
+<link rel="stylesheet" type="text/css" href="style.css">     
+<link rel="stylesheet" type="text/css" href="html/codemirror/codemirror.css">     
+<script src="html/codemirror/codemirror.js"></script>
+<script src="html/codemirror/modes/javascript/javascript.js"></script>
+<script src="html/codemirror/modes/xml/xml.js"></script>
+
+<script src="html/jquery/jquery1.11.js"></script>
+<script src="html/jquery/jquery-ui.min.js"></script>
+<link href="html/jquery/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+  
+<style>
+.CodeMirror {
+    border: 2px inset #fFF; 
+    resize: both;
+    
+}
+
+
+</style>
+
+<script>
+var editor;
+
+window.onerror = function(msg, url, line, col, error) {
+   //as we do not run in a browser, we need to catch javascript errors without using F12 devtools
+   //this will catch and alert all js errors on this page
+   var extra = !col ? '' : '\ncolumn: ' + col;
+   extra += !error ? '' : '\nerror: ' + error;
+   alert("Error: " + msg + "\nurl: " + url + "\nline: " + line + extra);
+   var suppressErrorAlert = true;
+   return suppressErrorAlert;
+};
+
+function ffas_init(base64_displayname){    
+/*
+    this function is called from ffastrans when your body is loaded. You cannot force this from your code!
+    you can use this as a replacement for $document.ready or body.onload
+*/
+
+  
+}
+
+function setSelectBoxByText(eid, etxt) {
+	var eid = document.getElementById(eid);
+    for (var i = 0; i < eid.options.length; ++i) {	
+        if (eid.options[i].text === etxt)
+            eid.options[i].selected = true;
+    }
+}
+
+function ffas_load_preset(base64_string){
+    /*
+        this is called by ffastrans when values from preset should be displayed on this page. You cannot force this from your code!
+        the object you get here is the same that you returned in the save function
+        IT IS MANDATORY to display values from preset on your userinterface
+    */
+    if (atob(base64_string) == "{}"){
+		return; //nothing to restore
+	}
+    try{
+        //convert value from ffastrans to json object (base64 decode!)
+        var obj = JSON.parse(atob(base64_string));
+        if(!obj.hasOwnProperty('inputs') ){
+            check_valid_variable_name()
+            return; //nothing to restore
+        }
+        //loop through inputs array, locate dom elements by id and set value
+        
+
+        for (i=0;i<obj["inputs"].length;i++){
+            var in_id = obj["inputs"][i]["id"];
+            var in_value = obj["inputs"][i]["value"];
+            
+            if (in_id == "parameter_value_list_innerHTML"){
+                document.getElementById("parameter_value_list").innerHTML = in_value;
+               
+            }else if(document.getElementById(in_id).type === "textarea"){
+                editor.setValue(in_value);    //codemirror
+            }
+            else if (document.getElementById(in_id).type === "checkbox"){    //checkboxes need other restore than text fields
+                document.getElementById(in_id).checked = in_value;
+            }else if (document.getElementById(in_id).type === "select-one"){
+                try{
+					setSelectBoxByText(in_id,in_value);	//select option
+				}catch(ex){
+					
+				}
+            }else{
+            //textbox?
+                document.getElementById(in_id).value = in_value;    //textarea, input
+            }
+            
+			//restore checkboxes and hidden divs
+			if (in_id == "enable_polling" && in_value == true){
+				polling_check_changed(document.getElementById("enable_polling"))
+			}
+			if (in_id == "enable_retry" && in_value == true){
+				retry_check_changed(document.getElementById("enable_retry"))
+			}
+			
+        }    
+        
+        //restore full innerHTML of parameter_value_list
+        for (i=0;i<obj["outputs"].length;i++){
+            var out_id = obj["outputs"][i]["id"];
+            var out_value = obj["outputs"][i]["value"];
+        }
+        //loop through outputs array ...
+        for (i=0;i<obj["outputs"].length;i++){
+            var out_id = obj["outputs"][i]["id"];
+            var out_value = obj["outputs"][i]["value"];
+            if (document.getElementById(out_id)){
+                document.getElementById(out_id).value = out_value; 	//text field
+				try{
+					setSelectBoxByText(out_id,out_value); //select option
+				}catch(ex){
+					
+				}
+            }
+        }
+
+        //kick off events
+        
+        change_highlight(document.getElementById("body_highlighting"));
+        http_method_changed(document.getElementById("http_method"))
+        
+    }catch(e){
+        alert("Restore failed. "+ "Message:"+ e.stack + "\n\nData: " + atob(base64_string) + "\n"  );
+        return;
+    }    
+
+}
+
+function ffas_save_preset(){
+    /*
+        this is called by ffastrans when a user hits the preset save button. You cannot force this from your code! 
+        IT IS MANDATORY to collect all values that can be saved and return them as base64 string here (use btoa function to encode to base64)
+        tipp: simple html forms can be saved and restored using body.innerHTML
+    */
+
+    //the object to hand over to ffastrans must look like this {"inputs":[{"id":"html_element_id","value":"html_value"}],"outputs":[{"id":"html_element_id","value":"html_value","content":"default_value"}]}
+    var to_save = {"inputs":[],"outputs":[]};
+    
+//INPUTS
+    //save full innerHTML of parameter_value_list for easy restore
+    to_save["inputs"].push({"id":"parameter_value_list_innerHTML", "value":document.getElementById("parameter_value_list").innerHTML, "data":""});
+	
+	//all other inputs
+    var inputs = document.getElementsByName("input");
+	for (i=0;i<inputs.length;i++){
+        
+        if (inputs[i].disabled){
+            to_save["inputs"].push({"id":inputs[i].id, "value":""});    //disabled fields will have empty value
+        }
+        else if (inputs[i].type==="checkbox"){
+            to_save["inputs"].push({"id":inputs[i].id, "value":inputs[i].checked});
+        }else if (inputs[i].type==="text"){
+            to_save["inputs"].push({"id":inputs[i].id, "value":inputs[i].value});
+        }else if(inputs[i].type==="select-one"){
+			to_save["inputs"].push({"id":inputs[i].id, "value":inputs[i].options[inputs[i].selectedIndex].value});
+			
+		}else if(inputs[i].type==="textarea"){
+            to_save["inputs"].push({"id":inputs[i].id, "value": editor.getValue()}); //todo, check if value is larger than 12k characters?
+        }
+        console.log(inputs[i].id,inputs[i].value)
+	}
+//OUTPUTS
+    var outputs = document.getElementsByName("output");
+	for (i=0;i<outputs.length;i++){
+		to_save["outputs"].push({"id":outputs[i].id, "value":outputs[i].value, "data":""});//for outputs, "value" can only be a variable like %s_source% and data is set by processor
+	}
+
+    return(btoa(JSON.stringify(to_save)))
+}
+
+
+//
+// Heper functions
+//
+
+function setSelectBoxByText(eid, etxt) {
+	var eid = document.getElementById(eid);
+    for (var i = 0; i < eid.options.length; ++i) {	
+        if (eid.options[i].text === etxt)
+            eid.options[i].selected = true;
+    }
+}
+
+function check_valid_variable_name(dom_element){
+    //this just checks if we have a valid variable on a custom textbox that defines a processor output
+    var content = dom_element.value;
+    dom_element.style.color = "red";
+    if ((content.match(/%/g))){
+        if ((content.match(/%/g)).length == 2){
+            dom_element.style.color = "";
+        }
+    }   
+}
+
+function validate_timespan(){
+    if (document.getElementById("timespan").value === "custom"){
+        document.getElementById("timespan_custom").disabled=false;
+    }else{
+        document.getElementById("timespan_custom").disabled=true;
+    }
+}
+
+function open_variables(input){
+    //find input field to the left and place cursor there
+    alert();if (document.activeElement == this.previousSibling){return;}this.previousSibling.focus();
+    
+}
+
+function addparameterinput(){
+    console.log("cloning..")
+    var all_inputs = document.getElementById("parameter_value_list").getElementsByTagName("div");
+    var last_el = all_inputs[all_inputs.length - 1];
+    console.log("Currently we have " +all_inputs.length + " Nodes")
+    var newNode = last_el.cloneNode(true);
+    console.log(newNode);
+    var newInnerHTML = newNode.innerHTML.replace(/Parameter \d+/, "Parameter " + (all_inputs.length+1));
+    newInnerHTML = newInnerHTML.replace(/input_parameter_value_\d+/g, "input_parameter_value_" + (all_inputs.length+1));
+	newInnerHTML = newInnerHTML.replace(/input_parameter_name_\d+/g, "input_parameter_name_" + (all_inputs.length+1));
+    newInnerHTML = newInnerHTML.replace(/input_parameter_escaping_\d+/g, "input_parameter_escaping_" + (all_inputs.length+1));
+    newNode.innerHTML = newInnerHTML;
+    document.getElementById("parameter_value_list").appendChild(newNode);
+}
+
+function removesinglefile(){
+    var all_inputs = document.getElementById("parameter_value_list").getElementsByTagName("div");
+    if (all_inputs.length > 1){
+        var last_el = all_inputs[all_inputs.length - 1];
+        document.getElementById("parameter_value_list").removeChild(last_el);
+    }
+}
+
+function ffas_folder_selected(base64_path,parent_id){
+    parent_id = atob(parent_id);
+    if (atob(base64_path) == ""){
+		return; //nothing to restore
+	}
+    
+    document.getElementById(parent_id).value = atob(base64_path);
+    
+}
+
+function polling_check_changed(checkbox){
+	if (checkbox.checked){
+		document.getElementById("status_polling_hide").style.display = "inherit";
+	}else{
+		document.getElementById("status_polling_hide").style.display = "none";
+	}
+}
+
+function retry_check_changed(checkbox){
+	if (checkbox.checked){
+		document.getElementById("retry_hide").style.display = "inherit";
+	}else{
+		document.getElementById("retry_hide").style.display = "none";
+	}
+}
+
+function enter_was_hit_on_codemirror(a,b){
+	
+	return false;
+}
+
+function ffas_keypress_enter(){
+	//override ffastrans closing processor gui on enter key
+}
+
+function init_body(){
+	
+	//document.getElementById('request_body').addEventListener('onclick',enter_was_hit_on_codemirror,false );
+	
+  editor = CodeMirror.fromTextArea(document.getElementById("request_body"), {
+    lineNumbers: true,
+    matchBrackets: true,
+    styleActiveLine: true
+  });
+  editor.setSize(null, 50);
+  
+  
+  $("request_body").resizable({
+		handles: "se"
+	});
+
+}
+
+function zoomcode(where){
+	if (where == 'in'){
+		editor.setSize(null, 600);
+	}else{
+		editor.setSize(null, 50);
+	}
+}
+
+function change_highlight(el){
+    var type = el.options[el.selectedIndex].value;
+    if (type == "json"){
+        editor.setOption("mode", "javascript");//todo support other modes
+    }else{
+        editor.setOption("mode", type);
+    }
+}
+
+function http_method_changed(el){
+
+    var type = el.options[el.selectedIndex].value;
+       
+    if (type == "GET"){
+        document.getElementById("hide_editor").style.display="none";
+    }else{
+        document.getElementById("hide_editor").style.display = "";
+    }
+}
+//document.addEventListener("paste", function(valu){alert(valu)};
+
+</script>
+</head>
+<body onload="init_body()">
+    <div id="title"></div>
+    <div id="restorepoint">
+	<!-- Basic Inputs -->
+    <span style="width:120px;display:inline-block" >URL: </span><input style="width:415px" name="input" id="url" placeholder="http://192.168.10.152:8093" value="" ></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="url" />
+	<div style="height:5px;visibility:hidden;"></div>
+	
+	<span style="width:120px;display:inline-block" >HTTP Method: </span><select name="input" id="http_method" onchange="http_method_changed(this)" ><option>POST</option><option>GET</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select><br/>
+	<div style="height:5px;visibility:hidden;"></div>
+	
+    <div id="hide_editor">
+	<span style="width:120px;display:inline-block" >Request Body: </span>
+        
+        <input  type="submit" style="background: url(html/img/zoom-in.png);background-size: 95%;background-repeat:no-repeat" onclick="zoomcode('in')" id="enlargebody" value="" />
+		<input style="background: url(html/img/zoom-out.png);background-size: 95%;background-repeat:no-repeat" type="submit" onclick="zoomcode('out')" id="unenlargebody" value="" ></input>
+		<select name="input" id="body_highlighting" onchange="change_highlight(this)" title="Set text highliging style" ><option></option><option>xml</option><option>json</option></select>
+	
+	<div style="height:5px;visibility:hidden;"></div>
+	<input style="transform:rotate(270deg);margin-left:5px" width="2px" type="submit" value="<" name="open_vars" data-parent="request_body" data-user_vars_only="false"/>
+	<textarea class="Codemirror" cols="1" rows="6" style="width:415px;resize:none;" name="input" id="request_body" placeholder="" value="" ></textarea><br/>
+	</div>
+	
+     <p style="color:#777777;margin-top:1px" title="" >Parameter List: <input type="submit" value="" style="background: url(html/img/list-add-2.png);background-size: cover" id="addparameterinput" onclick="addparameterinput()" /> <input style="background: url(html/img/list-remove-2.png);background-size: cover" onclick="removesinglefile()" type="submit" id="removesinglefile" value="" /></p>
+    <!-- Dynamic list of Parametes-->
+   
+    <div id="parameter_value_list">
+        <div><span style="width:120px;display:inline-block" >Parameter 1</span><select name="input" id="input_parameter_escaping_1" title="'Parameter Value' will be escaped for the chosen format"><option></option><option>xml</option><option>json</option><option>url</option></select><input name="input" id="input_parameter_name_1" placeholder="Param Name" title="Param Name, this exact value will be replaced by the value (right side) in the Request Body and URL"></input><input name="input" title="Prefixes: 'escapeurl:', 'escapejson:' , 'escapexml:'" placeholder="Value, Variable..." title="Parameter X Value" id="input_parameter_value_1" value="" oninput="" ></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="input_parameter_value_1" data-user_vars_only="true"/><br/></div>
+    </div>
+	
+	<div style="height:5px;visibility:hidden;"></div>
+	<div style="width:100%;border-top:1px solid lightgrey"></div>
+	<p style="color:#777777">Advanced Settings</p>
+	<!-- retry settings -->
+	<span style="width:120px;display:inline-block" >Enable Retry: </span><input type="checkbox" name="input" id="enable_retry" onchange="retry_check_changed(this)" title="Retry if response status code is NOT in this comma separated list"/>  
+	<div style="height:5px;visibility:hidden;"></div>
+	<div id="retry_hide" style="display:none"/>
+		    <span style="width:120px;display:inline-block" >Retry condition: </span><input style="width:415px" name="input" id="retry_condition" placeholder="15" value="200,201" title="Comma separated list of good status codes. If the response code is not in this list, the request will be retried"></input>
+			<div style="height:5px;visibility:hidden;"></div>
+			<span style="width:120px;display:inline-block" >Retry count: </span><input style="width:415px" name="input" id="retry_count" placeholder="15" value="15" title="How often to retry until end with failure"></input>
+			<div style="height:5px;visibility:hidden;"></div>
+			<span style="width:120px;display:inline-block" >Retry delay: </span><input style="width:415px" name="input" id="retry_delay" placeholder="15" value="15" title="Wait for x seconds before retrying"></input>
+			<div style="height:5px;visibility:hidden;"></div>
+	</div>
+	<!-- polling settings -->
+	<span style="width:120px;display:inline-block" >Enable Polling: </span><input type="checkbox" name="input" id="enable_polling" onchange="polling_check_changed(this)"/>  
+	<div style="height:5px;visibility:hidden;"></div>
+	<div id="status_polling_hide" style="display:none"/>
+		    <span style="width:120px;display:inline-block" >Frequency (s): </span><input style="width:415px" name="input" id="polling_frequency" placeholder="15" value="15" title="Polling frequency in seconds"></input>
+			<div style="height:5px;visibility:hidden;"></div>
+			<span style="width:120px;display:inline-block" >Stop Condition: </span><input style="width:415px" name="input" id="polling_condition_text" placeholder="<status>1</status>,<status>2</status>" value="" title="End polling when response contains this text, separate multiple conditions by comma"></input>
+			<div style="height:5px;visibility:hidden;"></div>
+	</div>
+	<span style="width:120px;display:inline-block" >Headers: </span><input style="width:415px" name="input" placeholder="Content-Type:application/json" id="http_headers" value="" title="Comma Separated list of http headers, e.g. Content-Type:application/json,soap-action:some_soap_action"></input><br/>
+
+	
+	<!--<span style="width:120px;display:inline-block" >Wait for File Count:</span> <input style="width:50px" name="input" placeholder="2" id="wait_count" value="" title="Wait for this number of files to be found (e.g. 2 .wav files or 1 .xml file)"></input>  Max wait duration <input name="input" id="wait_duration" title="How many minutes to wait for the count of files to be found"/> 	-->
+	<div style="height:5px;visibility:hidden;"></div>
+	<div style="width:100%;border-top:1px solid lightgrey"></div>
+	<p style="color:#777777">Outputs</p>
+	<span style="width:120px;display:inline-block" title="Last response Body">Last Response Body:</span><input name="output" title="Select user_variable where the value of the last result is stored in" id="output_last_value" value="" oninput="check_valid_variable_name(this)" ></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="output_last_value"/><br/>
+	<div style="height:5px;visibility:hidden;"></div>
+	<span style="width:120px;display:inline-block" title="The count of found files">Last Response Code: </span><input name="output" title="Select user_variable where the value of the last result is stored in" id="output_last_code" value="" oninput="check_valid_variable_name(this)" ></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="output_last_code" /><br/>
+    <div style="height:5px;visibility:hidden;"></div>
+   
+    </div>
+</body>

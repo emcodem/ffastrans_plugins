@@ -1,0 +1,12 @@
+{
+        "name":"AV MXF OpAtom",
+        "category":"Decoders",
+        "enabled":"1",
+        "priority":"1",
+        "description":"Finds Audio/Video couples of OPAtom Files and decodes them (like A/V Decoder)",
+        "guid": "916dcdee-87e1-45b1-906c-9c1234727214",
+		"proc_script":"processor.bat",
+	    "timeout_minutes": 120,
+		"gui_window_height": 400,
+        "version":"1.2"
+}

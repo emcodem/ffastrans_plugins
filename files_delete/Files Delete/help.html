@@ -1,0 +1,30 @@
+<style>
+html *
+{
+  font-family: Calibri;
+  font-size: 14px;
+}
+</style>
+<body>
+<b>Delete Files Processor</b><br/>
+This Processor deletes Files and or folders. If you provide a Folder on input, it will attemt to list all files and folders in this directory.
+If you need to specify include and exclude criteria, <b>please use the Files Find Processor</b> and specify it's output variable as File or Base Folder.
+<br/><br/>
+<b>File or base folder</b><br/>
+Possible inputs: A folder, A file, A list of files as JSON array, e.g. from Files Find output <br/>
+<br/>
+<b>Delete Folders:</b><br/>
+Allow deletion of folders <br/>
+<b>Delete Base Folder:</b><br/>
+Also attempts to delete the specified Base Folder thats given in "File or base folder" Input <br/>
+<br/>
+<b>Recurse:</b><br/>
+If a folder is specified on input, recurse into subdirectories <br/>
+<br/>
+<b>Ignore Errors:</b><br/>
+Always report success in the workflow<br/>
+<br/>
+<b>Test Mode:</b><br/>
+Don't delete anything, just fill the Output variables with the list of files and folders that would be deleted<br/>
+<br/>
+</body>

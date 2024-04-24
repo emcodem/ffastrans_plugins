@@ -1,0 +1,11 @@
+{
+        "name":"HTTP communicate+",
+        "category":"Others",
+        "enabled":"1",
+        "priortiy":"1",
+        "description":"Calls URL until condition is met",
+        "guid": "513dacee-78e2-45a1-916d-9a8f52734701",
+		"script_interpreter":"node",
+		"proc_script":"/src/app.js",
+        "version":"1.0"
+}

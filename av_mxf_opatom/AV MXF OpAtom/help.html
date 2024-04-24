@@ -1,0 +1,27 @@
+<style>
+html *
+{
+  font-family: Calibri;
+  font-size: 14px;
+}
+</style>
+<body>
+<b>AV MXF OpAtom Processor</b><br/><br/>
+This Processor finds all files that belong to the OpAtom Package<br/>
+<b>Input "OPAtom Video or Audio File":</b> one file of the package, no matter if video or audio. 
+<br>
+Hint: set your "Monitor" (Watchfolder) Processor to accept *V01* and set the Input   "OPAtom Video or Audio File:" to %s_source%. Generally it might not make much sense to use another variable than %s_source% 
+<br>
+<br>
+<b>Output "AVS source":</b> Provide a variable that shall contain the path to the generated AVS script. Generally it might not make much sense to use another variable than %s_source% for this output. 
+<br/><b>Output "Created ffmpeg line":</b> In case you do not wish to "decode" the file but e.g. just rewrap to OP1a, you can use this Output. Provide one user variable and later use it in a cmd processor.
+<br/><b>Output "List of found Files":</b> The Variable that you provide here will be filled with the JSON Array of found files. Useful for example to delete the files after transcoding using the custom delete processor.
+
+<br/><br/><br>Example for Output "Created ffmpeg line":</br>
+<br/>Create a user variable %s_ffinputline% and use it in the "Created ffmpeg line" field. 
+<br/>Insert a cmd processor node and enter this cmd line:
+<br/>%comspec% /C ""%s_ffmpeg%" %s_ffinputline% -codec copy -dn -y "%s_original_path%\%s_original_name%_op1a.mxf""
+
+<br/>
+<br/>
+</body>

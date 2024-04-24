@@ -1,0 +1,10 @@
+{
+        "name":"Files Delete",
+        "category":"Others",
+        "enabled":"1",
+        "priortiy":"1",
+        "description":"Deletes Files and or Folders",
+        "guid": "312dabee-88e1-44b1-906c-9c8f53734807",
+		"proc_script":"processor.bat",
+        "version" : "1.1"
+}

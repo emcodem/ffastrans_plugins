@@ -1,0 +1,16 @@
+{
+  "name": "src",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "matcher": "^3.0.0",
+    "natural-compare-lite": "^1.4.0",
+    "recursive-readdir": "^2.2.2"
+  }
+}

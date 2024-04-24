@@ -1,0 +1,13 @@
+{
+        "name":"For Each Start",
+        "category":"Operations",
+        "enabled":"1",
+        "priority":"1",
+        "description":"Execute the next nodes for each item of an array",
+        "guid": "132dccae-87a1-45b1-906c-1c1634724604",
+		"script_interpreter": "",
+		"proc_script":"processor.exe",
+	    "timeout_minutes": 120,
+		"gui_window_height": 400,
+        "version": "1"
+}

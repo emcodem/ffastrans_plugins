@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<meta http-equiv="X-UA-Compatible" content="IE=11" /> 
+<head>
+
+<link rel="stylesheet" type="text/css" href="style.css">     
+<script>
+
+window.onerror = function(msg, url, line, col, error) {
+   //as we do not run in a browser, we need to catch javascript errors without using F12 devtools
+   //this will catch and alert all js errors on this page
+   var extra = !col ? '' : '\ncolumn: ' + col;
+   extra += !error ? '' : '\nerror: ' + error;
+   alert("Error: " + msg + "\nurl: " + url + "\nline: " + line + extra);
+   var suppressErrorAlert = true;
+   return suppressErrorAlert;
+};
+
+function checkIE11 () {
+  return !!window.MSInputMethodContext && !!document.documentMode;
+}
+
+function ffas_init(base64_displayname,base64_node_json_config){    
+/*
+    this function is called from ffastrans when your body is loaded. You cannot force this from your code!
+    you can use this as a replacement for $document.ready or body.onload
+    arguments: current displayname in workflow canvas and plugin version from node.json
+*/
+	if (checkIE11() == false){
+		alert ("Only IE11 supported, you have: " + window.navigator.userAgent)
+	}
+   
+
+}
+
+function ffas_load_preset(base64_string){
+    /*
+        this is called by ffastrans when values from preset should be displayed on this page. You cannot force this from your code!
+        the object you get here is the same that you returned in the save function
+        IT IS MANDATORY to display values from preset on your userinterface
+    */
+   
+    try{
+        //convert value from ffastrans to json object (base64 decode!)
+        var obj = JSON.parse(atob(base64_string));
+        if(!obj.hasOwnProperty('inputs') ){
+            check_valid_variable_name()
+            return; //nothing to restore
+        }
+        
+        for (i=0;i<obj["inputs"].length;i++){
+            var in_id = obj["inputs"][i]["id"];
+            var in_value = obj["inputs"][i]["value"];
+            if (document.getElementById(in_id).type === "checkbox"){    //checkboxes need other restore than text fields
+                document.getElementById(in_id).checked = in_value;
+            }else{
+                document.getElementById(in_id).value = in_value;    //text field 
+				try{
+					setSelectBoxByText(in_id,in_value);	//select option
+				}catch(ex){
+					
+				}
+            }       
+
+        }    
+        //loop through outputs array ...
+        for (i=0;i<obj["outputs"].length;i++){
+            var out_id = obj["outputs"][i]["id"];
+            var out_value = obj["outputs"][i]["value"];
+            document.getElementById(out_id).value = out_value; 
+        }                
+    }catch(e){
+        return;
+    }    
+}
+
+function ffas_save_preset(){
+   var to_save = {"inputs":[],"outputs":[]};
+    
+    var inputs = document.getElementsByName("input");
+    for (i=0;i<inputs.length;i++){
+        if (inputs[i].type==="checkbox"){
+            to_save["inputs"].push({"id":inputs[i].id, "value":inputs[i].checked});
+        }else if (inputs[i].type==="text"){
+            to_save["inputs"].push({"id":inputs[i].id, "value":inputs[i].value});
+        }
+    }
+    
+    
+    var fullpath = document.getElementById("fullpath");
+    to_save["inputs"].push({"id":fullpath.id,"value":fullpath.value});
+
+    return(btoa(JSON.stringify(to_save)))
+}
+
+
+</script>
+</head>
+<body>
+<div id="title"></div>
+<div id="version"></div>
+    <p style="color:#777777">Inputs</p>
+    <span class="ffas-label-left" >File To check: </span><input class="ffas-text-input" id="fullpath" placeholder="Full File Path" ></input> <input width="2px" type="submit" value="<" name="open_vars" data-parent="fullpath" /><!--The input name open_vars is mandatory, ffastrans is watching all click events and checks if element had this name -->
+    <div style="height:5px;visibility:hidden;"></div>
+	<span class="ffas-label-left" >Delete File on Cancel: </span><input type="checkbox" name="input" id="delete_on_cancel" />  
+    
+    </body>

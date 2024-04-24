@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<meta http-equiv="X-UA-Compatible" content="IE=11" /> 
+<head>
+
+<link rel="stylesheet" type="text/css" href="style.css">
+<script>
+
+
+window.onerror = function(msg, url, line, col, error) {
+   //as we do not run in a browser, we need to catch javascript errors without using F12 devtools
+   //this will catch and alert all js errors on this page
+   var extra = !col ? '' : '\ncolumn: ' + col;
+   extra += !error ? '' : '\nerror: ' + error;
+   alert("Error: " + msg + "\nurl: " + url + "\nline: " + line + extra);
+   var suppressErrorAlert = true;
+   return suppressErrorAlert;
+};
+
+function checkIE11 () {
+  return !!window.MSInputMethodContext && !!document.documentMode;
+}
+
+function ffas_init(base64_displayname){
+/*
+    this function is called from ffastrans when your body is loaded. You cannot force this from your code!
+    you can use this as a replacement for $document.ready or body.onload
+*/
+	if (checkIE11() == false){
+		alert ("Only IE11 supported, you have: " + window.navigator.userAgent)
+	}
+    var _displayname = atob(base64_displayname);
+    //document.getElementById("title").innerHTML = "Processor Displayname: <b>"+ _displayname + "</b><br/><br/>";
+}
+
+function ffas_load_preset(base64_string){
+    /*
+        this is called by ffastrans when values from preset should be displayed on this page. You cannot force this from your code!
+        the object you get here is the same that you returned in the save function
+        IT IS MANDATORY to display values from preset on your userinterface
+    */
+   
+    try{
+        //convert value from ffastrans to json object (base64 decode!)
+        var obj = JSON.parse(atob(base64_string));
+        if(!obj.hasOwnProperty('inputs') ){
+            check_valid_variable_name()
+            return; //nothing to restore
+        }
+        //loop through inputs array, locate dom elements by id and set value
+        for (i=0;i<obj["inputs"].length;i++){
+            var in_id = obj["inputs"][i]["id"];
+            var in_value = obj["inputs"][i]["value"];
+            document.getElementById(in_id).value = in_value;
+        }
+		//loop through outputs array ...
+        for (i=0;i<obj["outputs"].length;i++){
+            var out_id = obj["outputs"][i]["id"];
+            var out_value = obj["outputs"][i]["value"];
+            document.getElementById(out_id).value = out_value;
+        }
+        
+    }catch(e){
+        //alert("Restore failed. Data: " + atob(base64_string) + "\n" + "Message:"+ e);
+        return;
+    }
+
+}
+
+function ffas_save_preset(){
+    /*
+        this is called by ffastrans when a user hits the preset save button. You cannot force this from your code!
+        IT IS MANDATORY to collect all values that can be saved and return them as base64 string here (use btoa function to encode to base64)
+        tipp: simple html forms can be saved and restored using body.innerHTML
+    */
+    //the object to hand over to ffastrans must look like this {"inputs":[{"id":"html_element_id","value":"html_value"}],"outputs":[{"id":"html_element_id","value":"html_value","content":"default_value"}]}
+    var to_save = {"inputs":[],"outputs":[]};
+
+   
+	
+	var out = document.getElementById("output");
+    to_save["outputs"].push({"id":out.id, "value":out.value, "data":""});//for outputs, "value" can only be a variable like %s_source% and data is set by processor
+
+    return(btoa(JSON.stringify(to_save)))
+}
+
+function check_valid_variable_name(dom_element){
+    //this just checks if we have a valid variable on a custom textbox that defines a processor output
+    var content = dom_element.value;
+    dom_element.style.color = "red";
+    if ((content.match(/%/g))){
+        if ((content.match(/%/g)).length == 2){
+            dom_element.style.color = "";
+        }
+    }
+}
+</script>
+</head>
+<body>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  
+<div id="title"></div>
+<table style="display:block">
+ <tr>
+     <th align= "left" ; colspan="3">This processor finds the username of the owner of the source file</th>
+  
+    <tr>
+		<td>Output (selected variable will be populated with the username of the file owner): </td>
+		<td><input id="output" value="choose user var" oninput="check_valid_variable_name(this)"/></td>
+		<td><input width="2px" type="submit" value="<" name="open_vars" /></td>
+	</tr>
+</table>
+</body>

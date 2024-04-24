@@ -1,0 +1,14 @@
+{
+        "name":"Wait Until File is oldest",
+        "category":"Others",
+        "enabled": 1,
+        "priority": -1,
+        "description":"Waits until a given file is the oldest one in directory",
+        "guid": "322accee-89e1-55b1-876c-9c1234724706",
+		"script_interpreter": "powershell.exe -ExecutionPolicy Unrestricted -File ",
+		"proc_script":"processor.ps1", 
+	    "timeout_minutes": 120,
+		"gui_window_height": 250,
+        "gui_window_width": 600,
+        "version": "1.3"
+}

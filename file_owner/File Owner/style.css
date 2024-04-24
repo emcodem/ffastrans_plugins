@@ -1,0 +1,11 @@
+body {
+  font-family: Calibri;
+  font-size: 13px;
+  background-color: #efefef;
+} 
+
+input[name="open_vars"] {
+	font-size: 12px;
+	font-family: Calibri;
+	cursor:pointer;
+}

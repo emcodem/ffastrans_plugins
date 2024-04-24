@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<meta http-equiv="X-UA-Compatible" content="IE=11" /> 
+<head>
+
+<link rel="stylesheet" type="text/css" href="style.css">     
+<script>
+
+window.onerror = function(msg, url, line, col, error) {
+   //as we do not run in a browser, we need to catch javascript errors without using F12 devtools
+   //this will catch and alert all js errors on this page
+   var extra = !col ? '' : '\ncolumn: ' + col;
+   extra += !error ? '' : '\nerror: ' + error;
+   alert("Error: " + msg + "\nurl: " + url + "\nline: " + line + extra);
+   var suppressErrorAlert = true;
+   return suppressErrorAlert;
+};
+
+function checkIE11 () {
+  return !!window.MSInputMethodContext && !!document.documentMode;
+}
+
+function ffas_init(base64_displayname,base64_node_json_config){    
+/*
+    this function is called from ffastrans when your body is loaded. You cannot force this from your code!
+    you can use this as a replacement for $document.ready or body.onload
+    arguments: current displayname in workflow canvas and plugin version from node.json
+*/
+	if (checkIE11() == false){
+		alert ("Only IE11 supported, you have: " + window.navigator.userAgent)
+	}
+    var _displayname = atob(base64_displayname);
+    //document.getElementById("title").innerHTML = "Processor Displayname: <b>"+ _displayname + "</b>";
+    var _nodejson = JSON.parse(atob(base64_node_json_config));
+    document.getElementById("version").innerHTML = "Version: " + _nodejson.version ;
+}
+
+function ffas_load_preset(base64_string){
+    /*
+        this is called by ffastrans when values from preset should be displayed on this page. You cannot force this from your code!
+        the object you get here is the same that you returned in the save function
+        IT IS MANDATORY to display values from preset on your userinterface
+    */
+   
+    try{
+        //convert value from ffastrans to json object (base64 decode!)
+        var obj = JSON.parse(atob(base64_string));
+        if(!obj.hasOwnProperty('inputs') ){
+            check_valid_variable_name()
+            return; //nothing to restore
+        }
+        //loop through inputs array, locate dom elements by id and set value
+        for (i=0;i<obj["inputs"].length;i++){
+            var in_id = obj["inputs"][i]["id"];
+            var in_value = obj["inputs"][i]["value"];
+            document.getElementById(in_id).value = in_value; 
+        }    
+        //loop through outputs array ...
+        for (i=0;i<obj["outputs"].length;i++){
+            var out_id = obj["outputs"][i]["id"];
+            var out_value = obj["outputs"][i]["value"];
+            document.getElementById(out_id).value = out_value; 
+        }                
+    }catch(e){
+        alert("No Preset saved yet, you must hit the OK button once!");
+        return;
+    }    
+
+}
+
+function ffas_save_preset(){
+    /*
+        this is called by ffastrans when a user hits the preset save button. You cannot force this from your code! 
+        IT IS MANDATORY to collect all values that can be saved and return them as base64 string here (use btoa function to encode to base64)
+        tipp: simple html forms can be saved and restored using body.innerHTML
+    */
+    //the object to hand over to ffastrans must look like this {"inputs":[{"id":"html_element_id","value":"html_value"}],"outputs":[{"id":"html_element_id","value":"html_value","content":"default_value"}]}
+    var to_save = {"inputs":[],"outputs":[]};
+    
+    //loop through all <input> elements on page and store them in name value object for ffastrans
+    //outputs
+    var out_avs = document.getElementById("avs_source");
+    to_save["outputs"].push({"id":out_avs.id, "value":out_avs.value, "data":""});//for outputs, "value" can only be a variable like %s_source% and data is set by processor
+    
+    var out_ffline = document.getElementById("ffmpeg_line");
+    to_save["outputs"].push({"id":out_ffline.id, "value":out_ffline.value, "data":""});//for outputs, "value" can only be a variable like %s_source% and data is set by processor
+    
+    var out_filelist = document.getElementById("output_filelist");
+    to_save["outputs"].push({"id":out_filelist.id, "value":out_filelist.value, "data":""});//for outputs, "value" can only be a variable like %s_source% and data is set by processor
+    
+    
+    //inputs
+    var in_source = document.getElementById("source_file");
+    to_save["inputs"].push({"id":in_source.id,"value":in_source.value});
+    var in_cache = document.getElementById("cache_dir");
+    to_save["inputs"].push({"id":in_cache.id,"value":in_cache.value});
+
+    return(btoa(JSON.stringify(to_save)))
+}
+
+function check_valid_variable_name(dom_element){
+    //this just checks if we have a valid variable on a custom textbox that defines a processor output
+    var content = dom_element.value;
+    dom_element.style.color = "red";
+    if ((content.match(/%/g))){
+        if ((content.match(/%/g)).length == 2){
+            dom_element.style.color = "";
+        }
+    }   
+}
+</script>
+</head>
+<body>
+<div style="margin-right:20px;float:right" id="version"></div>
+<table>
+    <tr>
+        <td><p style="color:#777777">Inputs</p></td>
+    </tr>
+    <tr>
+		<td><div style="display:block">OPAtom Video or Audio File: </td><td><input id="source_file" value="%s_source%"></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="source_file" data-user_vars_only="false"/></div></td><!--The input name open_vars is mandatory, ffastrans is watching all click events and checks if element had name open_vars -->
+    </tr>
+    <tr><br/></tr>
+    <tr>
+        <td><p style="color:#777777"><br/>Outputs</p></td>
+    </tr>
+    <tr>
+		<td><div style="display:block">AVS source: </td><td><input id="avs_source" value="%s_source%" oninput="check_valid_variable_name(this)" ></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="avs_source" data-user_vars_only="true"/></div></td>
+ 	</tr>
+    <tr>
+        <td><div style="display:block">Created ffmpeg line: </td><td><input id="ffmpeg_line" value="" oninput="check_valid_variable_name(this)" ></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="ffmpeg_line" data-user_vars_only="true"/></div></td>
+    </tr>
+    <tr>
+        <td><div style="display:block">List of found Files: </td><td><input id="output_filelist" value="" oninput="check_valid_variable_name(this)" ></input><input width="2px" type="submit" value="<" name="open_vars" data-parent="output_filelist" data-user_vars_only="true"/></div></td>
+    </tr>
+    </div>
+    <!-- hidden inputs, used to pass some useful data to the processor -->
+    <input style="display:none" id="cache_dir" value="%s_job_work%"></input>
+</body>

@@ -1,0 +1,81 @@
+﻿{
+  "id": "20191206-1621-3226-0d27-e6799f3de5c9",
+  "nodes": {
+    "next": {
+      "type": "plugin_htmlgui",
+      "id": "20191206-1604-0983-20f4-30dcb285f9e4"
+    }
+  },
+  "sources": {
+    "current_file": "C:\\Users\\bussi\\Downloads\\Untitled.json",
+    "original_file": "C:\\Users\\bussi\\Downloads\\Untitled.json",
+    "localized_file": "C:\\Users\\bussi\\Downloads\\Untitled.json",
+    "pretty_name": "Untitled.json"
+  },
+  "submit": {
+    "method": "manual",
+    "user": "bussi",
+    "client": "DESKTOP-N2DDGG6",
+    "time": "2019-12-06T16:21:32.292-01.00",
+    "system": "FFAStrans Workflow Manager"
+  },
+  "priority": 0,
+  "start_time": "2019-12-06T16:21:33.244-01.00",
+  "workflow": {
+    "id": "20191206-1515-1578-50a3-ed46dbe63c2d",
+    "name": "Untitled",
+    "path": "C:\\dev\\ffastrans_rework\\FFAStrans\\processors\\db\\cache\\jobs\\20191206-1621-3226-0d27-e6799f3de5c9\\workflow.json"
+  },
+  "host": "DESKTOP-N2DDGG6",
+  "status": "running",
+  "config_path": "C:\\dev\\ffastrans_rework\\FFAStrans\\processors\\db\\configs",
+  "cache_path": "C:\\dev\\ffastrans_rework\\FFAStrans\\processors\\db\\cache",
+  "work_dir": "c:\\.ffastrans_work_root\\20191206-1515-1578-50a3-ed46dbe63c2d\\20191206-1621-3226-0d27-e6799f3de5c9",
+  "path": [
+    {
+      "id": "20191206-1604-0983-20f4-30dcb285f9e4",
+      "name": "Custom Node Example"
+    }
+  ],
+  "proc_data": {
+    "outputs": [
+      {
+        "id": "output_found_array",
+        "value": "%s_test%",
+        "data": ""
+      },
+      {
+        "id": "output_found_count",
+        "value": "",
+        "data": ""
+      }
+    ],
+    "inputs": [
+      {
+        "id": "path",
+        "value": "c:\\temp"
+      },
+      {
+        "id": "include",
+        "value": "*"
+      },
+      {
+        "id": "exclude",
+        "value": ""
+      },
+      {
+        "id": "timespan",
+        "value": 60
+      },
+      {
+        "id": "timespan_custom",
+        "value": ""
+      },
+      {
+        "id": "recurse",
+        "value": false
+      }
+    ]
+  },
+  "processor_output_filepath": "c:\\.ffastrans_work_root\\20191206-1515-1578-50a3-ed46dbe63c2d\\20191206-1621-3226-0d27-e6799f3de5c9\\1~191206162133416~16888~20191206-1604-0983-20f4-30dcb285f9e4~plugin_htmlgui.outputs.json"
+}

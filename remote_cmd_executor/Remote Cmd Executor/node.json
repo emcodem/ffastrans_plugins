@@ -1,0 +1,13 @@
+{
+        "name":"Remote CMD Executor",
+        "category":"Others",
+        "enabled": 1,
+        "priority": -1,
+        "description":"Execute shell command on Remote (linux/mac/windows etc..)",
+        "guid": "189b188d-264d-42f8-b260-d40c3ccb41bc",
+		"script_interpreter":"",
+		"proc_script":"processor.bat",
+		"gui_window_width": 800,
+		"timeout_minutes": 1440,
+        "version":"1.0.0"
+}

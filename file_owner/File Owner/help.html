@@ -1,0 +1,24 @@
+<html>
+<head>
+<style>
+html *
+{
+  font-family: Calibri;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+This processor determines ownership of files. It should be placed directly after the monitor folder.<br/>
+<br/><br/>
+<b>Input</b>
+<br/>
+Hard coded to the value of the source argument passed to this processor<br/>
+<br/>
+<b>Output</b>
+<br/>
+Create a user variable that will be populated with the file owner's name. <br/>
+<br/>
+EXAMPLE: You create variable %s_owner% for output. If user BigDomain/bobjones drops file myvideo.mp4 in the upstream monitor folder, this processor will populate your variable %s_owner% with the value bobjones. This can be used in downstream processors to notify users of job status, append to file names or output to the webui.<br/>
+</body>
+</html>

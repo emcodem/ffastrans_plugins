@@ -1,0 +1,1 @@
+"%~dp0\src\node.exe" "%~dp0\src\app.js" %*

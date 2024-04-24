@@ -1,0 +1,39 @@
+<style>
+html *
+{
+  font-family: Calibri;
+  font-size: 14px;
+}
+</style>
+<body>
+<h1>Remote Cmd executor</h1>
+Make sure that ffastrans_remote_node is running on the target OS (run as daemon/service/autostart app). <br/>
+<br/>
+<h2>ffastrans_remote_node</h2>
+A script/program located in the plugin processor folder. You must install/run this program on a target machine before you can remote execute jobs.
+
+<br/>
+<br/>
+<b>Target Hostnames: </b><br/>
+List of Hostnames that you want to execute the task on (ffastrans_remote_node must be running)
+
+<br/><br/>
+<b>Queue Name / Concurrency:</b><br/>
+By default, we ignore any ffastrans internal Queue. Instead this processor has it's own queue system. <br/>
+Queue Name allows you to re-use a single processing queue over multiple ffastrans workflows.<br/>
+Each host of target hostnames can execute "Concurrency" tasks of the given queue name concurrently.<br/>
+Example:<br/>
+If you set queue Name to TESTING, concurrency to 2 and you have 2 hosts:<br>
+*) Every host can execute 2 tasks for the queue name TESTING, so overall you can execute 4 parallel tasks in the TESTING queue, no matter in how many workflows you use this queue name. <br/>
+*) If there are 4 Tasks running, each 2 on every host and 1 tasks finishes on one host, the oldest waiting job of all ffastrans workflows will start processing on the host that now has 1 free slot in TESTING queue.
+
+<br/><br/>
+<b>Command:</b><br/>
+A cmd/shell command that will be executed unmodified on the target host. 
+Note that if you execute on linux, you might first need to translate given file paths to the linux perspective.
+
+<br/><br/>
+<b>Save Output in Variable (stdout/stderr):</b><br/>
+Defines a ffastrans user variable where the commandline output of the executed shell process is saved
+
+</body>

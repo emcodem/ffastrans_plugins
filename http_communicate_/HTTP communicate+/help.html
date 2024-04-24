@@ -1,0 +1,55 @@
+<style>
+html *
+{
+  font-family: Calibri;
+  font-size: 14px;
+}
+</style>
+<body>
+<b>HTTP Communicate Advanced Processor</b><br/>
+This Processor executes the requested GET, POST etc.. http call<br/>
+<br/>
+Note that the Request Body input is invalid for GET call as in HTTP GET there is just no request body possible.
+<br/>
+<b>About Parameters</b>
+<br/>
+Parameters are valid for the "URL" and for the "Request Body" inputs. <br/>
+You can use ffastrans variables directly in the url and request body but usually you want parameters to be escaped, be it url escaped, json escaped or xml escaped. <br/>
+This is where the parameters function comes in handy. Instead of providing a ffastrans variable in the request body, you just write your own variable name. 
+<br/>
+<br/>
+Example: we want to use %s_source% in a JSON request body. 
+Your request body could look like:
+<pre>
+{
+   "inputFile":"%s_source%"
+}
+</pre>
+But this would lead to an invalid JSON being posted because s_source contains backslashes and these need JSON escaping. 
+<br/>
+Instead, you write your request body like:
+<pre>
+{
+   "inputFile":"MYSOURCE"
+}
+</pre>
+And in the parameter section, you define a parameter of type json named MYSOURCE with value %s_source%. <br/>
+This will automatically JSON escape "s_source" so you do not need to JSON escape s_source using a populate variables processor before http communicate.
+
+<br/>
+<br/>
+<b>Advanced Options</b>
+<br/><br/>
+<b>Retry</b><br/>
+Note that this is used for the case where your server is temporalily unavailable, e.g. it just reboots.
+<br/><br/>
+You can specify the http codes that you expect for a successful call. The request will be retried until either one of the specified http codes is returned by the server or until the maximum retry count is reached.
+<br/>
+Between each retry, we will wait "Retry delay" seconds until we try again. 
+<br/><br/>
+<b>Polling</b><br/>
+Use this when you want to wait until a specific value is returned in the response. E.g. You wait for a 3rdParty transcoder to finish.
+<br/>
+The Processor will call the specified http call until the "Stop condition" is returned in the response OR the globally set timeout for processors is reached.  
+<br/>
+</body>

@@ -1,0 +1,12 @@
+{
+        "name":"File Owner",
+        "category":"Operations",
+        "enabled":"1",
+        "priority":"1",
+        "description":"find file owner",
+        "guid": "112dgcfe-87e1-45b1-906c-9c1234724705",
+		"script_interpreter": "powershell.exe -ExecutionPolicy Unrestricted -File ",
+		"proc_script":"find_owner.ps1",
+	    "timeout_minutes": 120,
+		"gui_window_height": 400
+}

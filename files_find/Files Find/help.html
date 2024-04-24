@@ -1,0 +1,42 @@
+<style>
+html *
+{
+  font-family: Calibri;
+  font-size: 14px;
+}
+</style>
+<body>
+<b>Files Find Processor</b><br/>
+This Processor finds files and folders and outputs a simple JSON array with the found items.<br/><br/>
+<b>Note</b> that you have to configure the "Path" where to start finding files! <br/>
+Use %s_original_path% to search files in the same directory as the current source file of this job resides.
+<br/><br/>
+<b/>Usage examples :</b><br/>
+Populate Variables Processor: use $readarray('%s_file_list%', 2)<br/>
+Delete Files Processor: Provide a user_variable in the "File Variable" output and use the same variable in the input of the Delete Files Processor.<br/>
+<br/>
+<b>Path</b><br/>
+Base path, this will not be included in output list <br/>
+<br/>
+<b>Include and Exclude patterns</b><br/>
+Use like searching files in Windows Explorer, you can provide a comma separated list, e.g. *.m2v,*.wav <br/><br/>
+<b>Older Than</b><br/>
+Filter Files and Folders by age <br/>
+<br/>
+<b>Recurse:</b><br/>
+Recurse into subdirectories <br/>
+<br/>
+<b>Skip Folders/Files</b><br/>
+Do not include Folders/Files in output list<br/>
+<br/>
+<b>File Variable</b><br/>
+If you provide a user_variable here, like %s_file_list%, it will be populated with the JSON array of found files<br/>
+<br/>
+<b>Count Variable</b><br/>
+If you provide a user_variable here, you get the count of found items<br/>
+<br/>
+<b>Single File Outputs</b><br/>
+If you provide a user_variable, it will be populated with the X'th item of the found list. You don't need to use $readarray function in follow-up processors. <br/>
+<br/>
+<br/>
+</body>
