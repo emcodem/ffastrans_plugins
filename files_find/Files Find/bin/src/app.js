@@ -1,20 +1,37 @@
 var dir_recursive = require("recursive-readdir");
 const fs = require("fs");
+const path = require("path");
 var dir_func = fs.readdir;
-const path = require('path');
 var comparer = require("natural-compare-lite");
 const matcher = require('matcher');
+const fspromises = require('fs/promises');
+const lockfile = require('proper-lockfile');
 
 //prepare logging 
 var log_file = fs.createWriteStream(__dirname + '/debug.log', {flags : 'w'});
 log_file.write("Arguments: " + JSON.stringify(process.argv) + "\n") 
 
+function loginfo(...what){
+	log_file.write(what.join(" ") + "\n");
+	process.stdout.write(what.join(" ") + "\n")
+}
+
+console.log = loginfo;
+console.error = loginfo;
+
 //read input job ticket
 let rawdata = fs.readFileSync(process.argv[2],'utf8').replace(/^\uFEFF/, ""); //get rid of UTF8 BOM
 log_file.write("JOBTICKET");
-//log_file.write(rawdata);
+log_file.write(rawdata);
 let o_job = JSON.parse(rawdata);
 console.log(o_job["proc_data"]);
+
+//INTERNAL VARS
+var cache_dir = o_job.cache_dir;
+loginfo("cache_dir: " + cache_dir);
+var watch_db_dir 	= path.join(cache_dir,"files_find");
+var watch_db_file 	= path.join(watch_db_dir,"watch_"+o_job.nodes.next.id);
+loginfo("watch_db_file: " + watch_db_file);
 
 //GET OUTPUTS - make them available as global objects
 var o_out_files = filterById(o_job["proc_data"]["outputs"],"output_found_array");
@@ -78,14 +95,20 @@ if (recursive){
 }
 console.log(dir_func)
 
-//search the filesysem
 var all_files =[];
-findfiles();
+main();
 
-function findfiles(){
+//MAIN FUNCTION
+async function main(){
+	
     console.log("Findfiles start "+root_path+"\n");
-	dir_func(root_path,  function (err, files) {
-      if (err){
+	
+	dir_func(root_path,  async function (err, files) {
+	
+		//todo: only do this when lock is enabled
+		lockWatchDb();
+    
+		if (err){
         console.log("Error \n" + err + "\n");
         return;
       }
@@ -167,6 +190,11 @@ function findfiles(){
 
 		//skip sizes
 		all_files = filter_size(all_files);
+		
+		//skip already known files
+		
+		all_files = await processWatchDb(all_files);
+		
        //fill single output file output parameters
        var o_out_array = filterByTerm(o_job["proc_data"]["outputs"],"output_files");
 	   for (i=0;i<o_out_array.length;i++){
@@ -242,6 +270,10 @@ function write_output(){
 //
 //HELPERS
 //
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function sort_output_array(a_allfiles){
 	   console.log("Sorting by",sort_order)
@@ -320,4 +352,53 @@ function format_input_path(what){
         throw(what + " does not exist");
     }
     return what;
+}
+
+//WATCHDATABASE
+
+async function lockWatchDb(){
+	if (!fs.existsSync(watch_db_dir)){
+		console.log("Creating watchdb dir",watch_db_dir);
+		fspromises.mkdir(watch_db_dir, {}).catch((err) => {
+		  console.error("Error, could not create folder",watch_db_dir)
+		})
+	}
+	if (!fs.existsSync(watch_db_file)){
+		console.log("Creating watchdb dir",watch_db_file);
+		await fspromises.writeFile(watch_db_file,"[]");
+	}else{
+		//wait until we can write to the db File
+		var is_locked = true;
+		await lockfile.lock(watch_db_file,{stale:5000,retries:10});//after 1 minute we continue with lock
+		console.log("Locked the watchdb");
+		
+	}
+}
+
+async function processWatchDb(residentFiles){
+	//delete entries not in residentFiles but in oldFiles
+
+	var oldFiles = await fspromises.readFile(watch_db_file,"utf-8");
+	console.log("oldfiles",oldFiles);
+	var oldFiles = JSON.parse(oldFiles);
+	//build "new files" (difference between original files in watchdb and oldFiles_without_stale)
+	
+	
+	let staleFiles = oldFiles.filter(x => !residentFiles.includes(x)); //files do not exist anymore
+	let oldFiles_without_stale = oldFiles.filter(x => !staleFiles.includes(x)); 
+
+	
+	//store sum of oldFiles_without_stale and unknown files
+	let newFiles = residentFiles.filter(x => !oldFiles_without_stale.includes(x)); 
+	
+	let toRemember = [...oldFiles_without_stale,...newFiles];
+	console.log("remembering",toRemember.length,"files")
+	await fspromises.writeFile(watch_db_file,JSON.stringify(toRemember,null,2),"utf-8");
+	
+	
+	console.log("newFiles",JSON.stringify(newFiles));
+	return newFiles;
+	
+	
+	
 }
