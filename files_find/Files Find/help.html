@@ -29,6 +29,10 @@ Recurse into subdirectories <br/>
 <b>Skip Folders/Files</b><br/>
 Do not include Folders/Files in output list<br/>
 <br/>
+<b>Only new Files</b><br/>
+If enabled, the processor will remember which files have been already processed in a json file in Processors/db/cache/Files Find/watch_%proc_guid%<br/>
+Processed Filenames will be "forgotten" if they are missing for one run in the watchfolder.
+<br/>
 <b>File Variable</b><br/>
 If you provide a user_variable here, like %s_file_list%, it will be populated with the JSON array of found files<br/>
 <br/>

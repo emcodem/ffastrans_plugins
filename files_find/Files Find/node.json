@@ -6,5 +6,5 @@
         "description":"Finds and waits for files",
         "guid": "512dccee-88e1-45b1-906c-9c8f53724805",
 		"proc_script":"processor.bat",
-        "version":"1.6.1"
+        "version":"1.6.2"
 }

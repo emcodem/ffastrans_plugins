@@ -65,6 +65,9 @@ var sort_order = filterById(o_job["proc_data"]["inputs"], "sort_order")["value"]
 console.log("Input sort_order: " + sort_order);
 var output_type = filterById(o_job["proc_data"]["inputs"], "output_type")["value"]; //custom date is in hours
 console.log("Input output_type: " + output_type);
+var use_watchdb = filterById(o_job["proc_data"]["inputs"], "use_watchdb")["value"]; //only output "new" files
+console.log("Input use_watchdb: " + use_watchdb);
+
 
 var skip_size_val = -1
 var skip_size_operator = ">";
@@ -105,8 +108,8 @@ async function main(){
 	
 	dir_func(root_path,  async function (err, files) {
 	
-		//todo: only do this when lock is enabled
-		lockWatchDb();
+		if (use_watchdb)
+			lockWatchDb();
     
 		if (err){
         console.log("Error \n" + err + "\n");
@@ -182,6 +185,11 @@ async function main(){
 
 	  }
 	  
+		//skip already known files
+		
+		if (use_watchdb)
+			all_files = await processWatchDb(all_files);
+		
 		//output found items count
 		o_out_count["data"] = all_files.length;
 	   
@@ -191,9 +199,7 @@ async function main(){
 		//skip sizes
 		all_files = filter_size(all_files);
 		
-		//skip already known files
-		
-		all_files = await processWatchDb(all_files);
+
 		
        //fill single output file output parameters
        var o_out_array = filterByTerm(o_job["proc_data"]["outputs"],"output_files");
