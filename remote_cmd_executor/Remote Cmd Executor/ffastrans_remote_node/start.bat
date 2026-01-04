@@ -1,1 +1,1 @@
-"%~dp0..\bin\src\node.exe" "%~dp0ffastrans_remote.js"
+"%~dp0..\bin\src\node.exe" "%~dp0ffastrans_remote.js" %*

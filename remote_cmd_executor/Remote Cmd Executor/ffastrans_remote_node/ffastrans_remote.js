@@ -3,10 +3,33 @@ const bodyParser = require('body-parser');
 const { spawn } = require('child_process');
 const { parseArgsStringToArgv } = require('string-argv');
 const crypto = require('crypto');
+const { parseArgs } = require('util');
 const app = express();
 const os = require('os');
 
-let listen_port = 5001;
+// Parse command-line arguments
+const { values } = parseArgs({
+  options: {
+    port: { type: 'string', short: 'p', default: '5001' },
+    address: { type: 'string', short: 'a', default: '0.0.0.0' },
+    help: { type: 'boolean', short: 'h' }
+  }
+});
+
+if (values.help) {
+  console.log(`
+Usage: node ffastrans_remote.js [OPTIONS]
+
+Options:
+  -p, --port <number>       Port to listen on (default: 5001)
+  -a, --address <address>   Address to listen on (default: 0.0.0.0)
+  -h, --help               Show this help message
+  `);
+  process.exit(0);
+}
+
+const listen_port = parseInt(values.port);
+const listen_address = values.address;
 let m_queues = {"default":{}};
 
 // UNHANDLED EXCEPTION
@@ -33,8 +56,8 @@ app.use('/', function(req, res, next) {
 
 app.use(express.json());
 
-app.listen(listen_port, () => {
-  console.log('Server is running on port ' + listen_port);
+app.listen(listen_port, listen_address, () => {
+  console.log(`Server is running on ${listen_address}:${listen_port}`);
 });
 
 processQueues(); // keeps this process running forever
