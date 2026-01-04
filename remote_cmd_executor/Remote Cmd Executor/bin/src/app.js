@@ -19,7 +19,7 @@ var output_stderr = filterById(o_job["proc_data"]["outputs"],"stderr");
 
 //GET INPUTS // the fields in this object was defined by the index.html which belongs to this processor
 var ffastrans_root = filterById(o_job["proc_data"]["inputs"], "s_ffastrans_dir")["value"];
-var hostnames = filterById(o_job["proc_data"]["inputs"], "hostnames")["value"];
+var hostnames = filterById(o_job["proc_data"]["inputs"], "hostnames")["value"] || "localhost";
 hostnames = comma_to_array(hostnames);
 
 var queue_name = filterById(o_job["proc_data"]["inputs"], "queue_name")["value"];
@@ -58,25 +58,30 @@ async function main(){
 		let startretrycount = 0;
 		while (!job_started){
 
-			while(await get_least_busy_host(hostnames,queue_name) >= max_concurrent){
-				console.log("Queued, slots full. Running:",get_least_busy_host(hostnames,queue_name),"Allowed:",max_concurrent)
-				await sleep(1000);
-			}
-			//m_selected_host has a slot free, check if we are the oldest one waiting for tickets
-			var queuecheck = am_i_the_oldest_one();
-			if (!queuecheck.can_start){
-				console.log("Queued, Jobs waiting: ",queuecheck.count, "can_start",queuecheck.can_start);
-				await sleep(1000); //prevent log overload on error
-				continue;
+			if (queue_name && max_concurrent){
+				while(await get_least_busy_host(hostnames,queue_name) >= max_concurrent){
+					console.log("Queued, slots full. Running:",get_least_busy_host(hostnames,queue_name),"Allowed:",max_concurrent);
+					await sleep(1000);
+				}
+				//m_selected_host has a slot free, check if we are the oldest one waiting for tickets
+				var queuecheck = am_i_the_oldest_one();
+				if (!queuecheck.can_start){
+					console.log("Queued, Jobs waiting: ",queuecheck.count, "can_start",queuecheck.can_start);
+					await sleep(1000); //prevent log overload on error
+					continue;
+				}
+			}else{
+				m_selected_host = hostnames[Math.floor(Math.random() * hostnames.length)];
+				console.log("No queue or concurrency limits set, selecting random host ",m_selected_host);
 			}
 			
 			try{
-				console.log("start job attempt")
+				console.log("Starting Job on host ",m_selected_host)
 				response = await start_job(); //waits 5 seconds to see if there are younger jobs coming in. If there was a younger one, 406 is returned
 				job = response.data;
 				job_started = true;
 				fs.unlinkSync(m_my_sync_file); //remove sync file
-				console.log("start job success")
+				console.log("start job success",job.id,"command: [",job.command,"] on host ",m_selected_host)
 			}catch(ex){
 				if (ex.response)
 					if(ex.response.status == 303) //"see other, there was an older job than this one submitted in the last 5 seconds"
@@ -101,17 +106,17 @@ async function main(){
 	   try{
 		   response = await get_job_status(job.id)
 		   if (response.status != 200)
-				throw new Error("Status code " + response.status);
+				throw new Error(`${job.id} Status code ${response.status}`);
 		   if (response.data.end){
 				do_poll = false;
-				console.log("Job end detected.")
+				console.log(`${job.id} Job end detected.`)
 		   }
 		
 	   }catch(ex){
 			if (retry_count > max_retries)
 				do_poll = false;
 			else
-				console.error("Got error  in get job status, retrying. Code: ",ex)
+				console.error(`${job.id} Got error  in get job status, retrying. Code: `,ex)
 	   }
 	   //todo: implement error handling? 
 
@@ -125,11 +130,12 @@ async function main(){
     var responseBody = response["data"];
     statuscode = response["status"];
    
-	console.log("Final respons",responseBody)
-	console.log("Final response code: " , statuscode);
-	console.log("stdouterr",responseBody.stdout,responseBody.stderr)
-	output_stdout["data"] = responseBody.stdout.join("\n");
-	output_stderr["data"] = responseBody.stderr.join("\n");
+	console.log(`${job.id} Final respons`,responseBody)
+	console.log(`${job.id} Final response code: ` , statuscode);
+	console.log(`${job.id} stdouterr`,responseBody.stdout,responseBody.stderr)
+
+	output_stdout["data"] = responseBody.stdout.join("\n").trim();
+	output_stderr["data"] = responseBody.stderr.join("\n").trim();
 
 	write_output();	
 	if (responseBody.exit_code != 0){
@@ -137,10 +143,10 @@ async function main(){
 	}
 	
 	if (! (statuscode > 199 && statuscode < 300)){ 
-		console.log("Status codes other than 2xx are threated as error");
+		console.log(`${job.id} Status codes other than 2xx are threated as error`);
 		endProgram(statuscode);
 	}
-	console.log("Graceful exit");
+	console.log(`${job.id} Graceful exit`);
 	endProgram(0);
 }
 
@@ -155,7 +161,7 @@ function endProgram(code){
 }
 
 const olderThan15Secs = (date) => {
-    const checkDate = Date.now() - 30000;
+    const checkDate = Date.now() - 50010;
     return date < checkDate;
 }
 
@@ -204,7 +210,7 @@ function sleep(ms) {
 
 function kill(job_id){
 	console.log("executing job kill")
-	axios.get("http://" + m_selected_host + ":3000/kill?job_id=" +job_id);
+	axios.get("http://" + m_selected_host + ":5001/kill?job_id=" +job_id);
 }
 
 function register_cancel_listener(job_id){
@@ -223,7 +229,7 @@ function register_cancel_listener(job_id){
 
 async function start_job(){
 
-	var res = await axios.post("http://" + m_selected_host + ":3000/start"
+	var res = await axios.post("http://" + m_selected_host + ":5001/start"
 			,{
 				command: cmd,
 				concurrency: max_concurrent || 5,
@@ -233,6 +239,7 @@ async function start_job(){
 
 	
 	//var res = await client["postPromise"]("/execute", args); //method name is like getPromise,postPromise etc
+	console.log("Start Job Command:",cmd)
 	console.log("Start Job Status code:",res.status);
 	console.log("Response data",res["data"]);
 	register_cancel_listener(res["data"].id);
@@ -241,11 +248,11 @@ async function start_job(){
 }
 
 async function get_job_status(job_id){
-	console.log("Calling url " + "http://" + m_selected_host + ":3000/status?job_id=" +job_id)
-	var res = await axios.get("http://" + m_selected_host + ":3000/status?job_id=" +job_id);
+	console.log("Calling url " + "http://" + m_selected_host + ":5001/status?job_id=" +job_id)
+	var res = await axios.get("http://" + m_selected_host + ":5001/status?job_id=" +job_id);
 	
 	//console.log("Response data",res["data"]);
-	console.log(res["data"].stdout[res["data"].stdout.length-1])
+	console.log("stdout",job_id,res["data"].stdout[res["data"].stdout.length-1])
 	
 	return res;
 
@@ -266,7 +273,7 @@ async function get_least_busy_host(a_hosts,queue_name){
 	var least_busy_name;
 	var least_busy_jobcount = Infinity;
 	for (let host of a_hosts){
-		var res = await axios.post("http://" + host + ":3000/find",
+		var res = await axios.post("http://" + host + ":5001/find",
 		{
 			end:false,
 			queue_name:queue_name
